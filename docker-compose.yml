@@ -1,0 +1,28 @@
+version: '3.4'
+
+# You need to start it with the following CLI command:
+# docker-compose -f docker-compose.yml up --build
+
+services:
+    sqldata:
+        image: 'mcr.microsoft.com/mssql/server:2017-latest'
+        environment:
+            - SA_PASSWORD=Pass@word
+            - ACCEPT_EULA=Y
+        ports:
+            - '5433:1433'
+
+    scheduler:
+        image: 'scheduler:${PLATFORM:-linux}-${TAG:-latest}'
+        build:
+            context: .
+            dockerfile: src/Scheduler/Dockerfile
+        environment:
+            - ASPNETCORE_ENVIRONMENT=Development
+            - ASPNETCORE_URLS=http://0.0.0.0:80
+            - ConnectionStrings:HangfireConnection=${HANGFIRE_CONNECTION:-Server=sqldata;Database=Hangfire_Sample;User Id=sa;Password=Pass@word}
+            - ConnectionStrings:DefaultConnection=${DEFAULT_CONNECTION:-Server=sqldata;Database=Hangfire_Sample;User Id=sa;Password=Pass@word}
+        ports:
+            - '5000:80'
+        depends_on:
+            - sqldata
